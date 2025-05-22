@@ -62,3 +62,6 @@ async def process_time(message: Message, state: FSMContext):
         await session.commit()
 
     await message.answer("Рақмет! Анкета сақталды ✅")
+def register_handlers(dp):
+dp.include_router(router)
+
