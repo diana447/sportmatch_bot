@@ -7,6 +7,7 @@ from models import User, async_session_maker, get_matches_for, save_like, check_
 from inline_keyboard import match_keyboard
 from sqlalchemy import select
 from reply_keyboard import pace_keyboard, time_keyboard
+from location_matcher import suggest_location
 
 router = Router()
 
@@ -37,6 +38,9 @@ async def process_city(message: Message, state: FSMContext):
 @router.message(Form.location)
 async def process_location(message: Message, state: FSMContext):
     await state.update_data(location=message.text)
+    suggested = suggest_location(message.text)
+    location = suggested if suggested else message.text
+    await state.update_data(location=location)
     await message.answer("Темп қандай? (минут/км — таңдаңыз ең жақын мәнді)", reply_markup=pace_keyboard())
     await state.set_state(Form.pace)
 
