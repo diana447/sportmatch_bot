@@ -6,6 +6,7 @@ from aiogram.filters import Command
 from models import User, async_session_maker, get_matches_for, save_like, check_mutual_like
 from inline_keyboard import match_keyboard
 from sqlalchemy import select
+from reply_keyboard import pace_keyboard, time_keyboard
 
 router = Router()
 
@@ -36,13 +37,13 @@ async def process_city(message: Message, state: FSMContext):
 @router.message(Form.location)
 async def process_location(message: Message, state: FSMContext):
     await state.update_data(location=message.text)
-    await message.answer("Темп қандай? (жәй, орташа, жылдам)")
+    await message.answer("Темп қандай? (минут/км — таңдаңыз ең жақын мәнді)", reply_markup=pace_keyboard())
     await state.set_state(Form.pace)
 
 @router.message(Form.pace)
 async def process_pace(message: Message, state: FSMContext):
     await state.update_data(pace=message.text)
-    await message.answer("Қай уақытта ыңғайлы? (таңертең/кешке)")
+    await message.answer("Қай уақытта жүгіргіңіз келеді? 🕓", reply_markup=time_keyboard())
     await state.set_state(Form.time)
 
 @router.message(Form.time)
