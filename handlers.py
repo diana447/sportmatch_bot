@@ -109,6 +109,18 @@ async def process_feedback(callback: CallbackQuery):
                     f"Бот нашёл совпадение 💖"
                 )
                 await callback.message.answer(text, parse_mode="HTML")
+@router.message(Command("edit"))
+async def edit_profile(message: Message):
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[
+            [types.KeyboardButton(text="📍 Локация"), types.KeyboardButton(text="🕓 Уақыт")],
+            [types.KeyboardButton(text="⏱ Темп"), types.KeyboardButton(text="🏙 Қала")],
+            [types.KeyboardButton(text="🔁 Бәрін қайта толтыру")]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    await message.answer("Қандай ақпаратты өзгерткіңіз келеді?", reply_markup=keyboard)
 
     await callback.message.edit_reply_markup()  # убрать кнопки
     await show_next_match(from_user, callback.bot)
