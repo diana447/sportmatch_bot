@@ -1,11 +1,11 @@
-from aiogram import Router, F
-from aiogram.types import Message
+from aiogram import Router, F, Bot, types
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.filters import Command
-from models import User, async_session_maker
+from models import User, async_session_maker, get_matches_for, save_like, check_mutual_like
+from inline_keyboard import match_keyboard
 from sqlalchemy import select
-from aiogram import types
 
 router = Router()
 
@@ -62,6 +62,51 @@ async def process_time(message: Message, state: FSMContext):
         await session.commit()
 
     await message.answer("Рақмет! Анкета сақталды ✅")
+    await show_next_match(message.from_user.id, message.bot)
+
+async def show_next_match(user_id: int, bot: Bot):
+    matches = await get_matches_for(user_id)
+    if not matches:
+        await bot.send_message(user_id, "Пока нет подходящих людей. Попробуйте позже 💫")
+        return
+
+    match = matches[0]
+
+    text = (
+        f"👤 <b>{match.name}</b>\n"
+        f"📍 Локация: {match.location}\n"
+        f"🏙 Қала: {match.city}\n"
+        f"🕓 Уақыт: {match.time}\n"
+        f"🏃 Темп: {match.pace}"
+    )
+
+    keyboard = match_keyboard(match.id)
+    await bot.send_message(user_id, text, reply_markup=keyboard, parse_mode="HTML")
+
+@router.callback_query(F.data.startswith("like:") | F.data.startswith("dislike:"))
+async def process_feedback(callback: CallbackQuery):
+    from_user = callback.from_user.id
+    data = callback.data.split(":")
+    action, to_user = data[0], int(data[1])
+
+    await save_like(from_user, to_user, action)
+
+    if action == "like":
+        mutual = await check_mutual_like(from_user, to_user)
+        if mutual:
+            async with async_session_maker() as session:
+                from_user_obj = await session.scalar(select(User).where(User.telegram_id == from_user))
+                to_user_obj = await session.scalar(select(User).where(User.telegram_id == to_user))
+
+            if from_user_obj and to_user_obj:
+                text = (
+                    f"🎉 <b>{from_user_obj.name} и {to_user_obj.name} решили метчиться!</b>\n"
+                    f"Бот нашёл совпадение 💖"
+                )
+                await callback.message.answer(text, parse_mode="HTML")
+
+    await callback.message.edit_reply_markup()  # убрать кнопки
+    await show_next_match(from_user, callback.bot)
+
 def register_handlers(dp):
     dp.include_router(router)
-
