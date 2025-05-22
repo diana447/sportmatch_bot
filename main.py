@@ -13,8 +13,9 @@ async def main():
 
     register_handlers(dp)
 
+    # Создание таблиц
+    from db import create_tables
+    await create_tables()
+
     print("Бот запущен...")
     await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
